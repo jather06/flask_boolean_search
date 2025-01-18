@@ -11,6 +11,7 @@ STOPWORDS = ["a", "an", "the", "and", "or", "not", "in", "on", "at", "with", "by
 
 documents = []  # List to store preprocessed documents
 doc_term_matrix = defaultdict(set)  # Dictionary to store the document-term matrix
+doc_t_matrix1 = {}
 
 def preprocess_and_read_documents():
     for i in range(1, 11):  # Assuming documents are named doc1.txt to doc10.txt
@@ -35,9 +36,11 @@ preprocess_and_read_documents()
 # Print the document-term matrix for verification
 print("Document-Term Matrix:")
 for term, doc_ids in doc_term_matrix.items():
+    doc_t_matrix1[term]=doc_ids
+
     doc_t_mat = open("doc_term_matrix.txt", "a")
     doc_t_mat.write(f"{term}: {sorted(doc_ids)} # ")
-
+print(doc_t_matrix1)
 q1_res = []
 def search_str(word):
         with open('doc_term_matrix.txt', 'r') as file:
