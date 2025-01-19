@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boolean Query Search</title>
+</head>
+<body>
+    <h1>Boolean Query Search</h1>
+    <form method="POST">
+        <table>
+            <tr>
+                <th>Condition</th>
+                <th>Term 1</th>
+                <th>Operator</th>
+                <th>Term 2</th>
+            </tr>
+            {% for i in range(1, 5) %}
+            <tr>
+                <td>{{ i }}</td>
+                <td><input type="text" name="term1_{{ i }}"></td>
+                <td>
+                    <select name="operator_{{ i }}">
+                        <option value="unused">unused</option>
+                        <option value="AND">AND</option>
+                        <option value="OR">OR</option>
+                        <option value="NOT">NOT</option>
+                    </select>
+                </td>
+                <td><input type="text" name="term2_{{ i }}"></td>
+            </tr>
+            {% endfor %}
+        </table>
+        <button type="submit">Compute</button>
+    </form>
+
+    <h2>Results for Individual Queries</h2>
+    {% if query_results %}
+        <ul>
+        {% for query in query_results %}
+            <li>
+                <strong>Condition {{ query[0] }}</strong>: 
+                <em>{{ query[1] }} {{ query[2] }} {{ query[3] }}</em> 
+                -> Matching Documents: {{ query[4] | join(", ") }}
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No conditions were matched.</p>
+    {% endif %}
+
+    <h2>Documents Matching All Conditions</h2>
+    {% if combined_result %}
+        <p>Documents: {{ combined_result | join(", ") }}</p>
+    {% else %}
+        <p>No document satisfies all the conditions.</p>
+    {% endif %}
+</body>
+</html>

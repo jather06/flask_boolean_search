@@ -1,66 +1,95 @@
 from flask import Flask, render_template, request
-import os
-import string
 from collections import defaultdict
 import re
+import os
 
 app = Flask(__name__)
 
 # Stopwords to exclude during preprocessing
-STOPWORDS = ["a", "an", "the", "and", "or", "not", "in", "on", "at", "with", "by", "for", "is", "are", "of", "to", "as"]
+STOPWORDS = {"a", "an", "the", "and", "or", "not", "in", "on", "at", "with", "by", "for", "is", "are", "of", "to", "as"}
 
 documents = []  # List to store preprocessed documents
 doc_term_matrix = defaultdict(set)  # Dictionary to store the document-term matrix
-doc_t_matrix1 = {}
+all_doc_ids = set(range(1, 11))  # Assuming there are 10 documents named doc1.txt to doc10.txt
 
-def preprocess_and_read_documents():
+# Path to document directory (update this as needed)
+DOC_DIR = "documents"
+
+def preprocess_text(text):
+    """Lowercase, remove punctuation, and filter out stopwords."""
+    text = text.lower()
+    text = re.sub(r"[^\w\s]", "", text)  # Remove punctuation
+    words = [word for word in text.split() if word not in STOPWORDS]
+    return words
+
+def build_document_term_matrix():
+    """Read documents, preprocess them, and build the term-document matrix."""
     for i in range(1, 11):  # Assuming documents are named doc1.txt to doc10.txt
-        with open(f"documents/doc{i}.txt", "r") as f:
+        doc_path = os.path.join(DOC_DIR, f"doc{i}.txt")
+        if not os.path.exists(doc_path):
+            continue
+
+        with open(doc_path, "r") as f:
             text = f.read()
-            # Preprocessing: lowercasing and removing punctuation with regex
-            text = text.lower()
-            text = re.sub(r"[^\w\s]", "", text)  # Removes all characters except letters, digits, and whitespace
-            
-            # Removing stopwords and splitting into words
-            words = [word for word in text.split() if word not in STOPWORDS]
-            
-            # Add the processed text to the documents list
-            documents.append(" ".join(words))
-            
-            # Populate the document-term matrix
-            for word in words:
-                doc_term_matrix[word].add(i)  # Add the document ID (i) to the set of documents containing the word
 
-preprocess_and_read_documents()
+        # Preprocess the text
+        words = preprocess_text(text)
+        documents.append(" ".join(words))
 
-# Print the document-term matrix for verification
-print("Document-Term Matrix:")
-for term, doc_ids in doc_term_matrix.items():
-    doc_t_matrix1[term]=doc_ids
+        # Update the document-term matrix
+        for word in words:
+            doc_term_matrix[word].add(i)
 
-    doc_t_mat = open("doc_term_matrix.txt", "a")
-    doc_t_mat.write(f"{term}: {sorted(doc_ids)} # ")
-print(doc_t_matrix1)
-q1_res = []
-def search_str(word):
-        with open('doc_term_matrix.txt', 'r') as file:
-            # read all content of a file
-            content= file.read()
-            # check if string present in a file
-            for i in range(1,11):
+def search_term(term):
+    """Search for a term in the document-term matrix."""
+    term = term.strip().lower()
+    return doc_term_matrix.get(term, set())
 
-                if f" {word}: [{i}" in content:
-                    q1_res.append(i)
+def process_query(term1, operator, term2):
+    """
+    Process a single query condition.
+    - AND: Documents must contain both terms.
+    - OR: Documents must contain either term.
+    - NOT: Exclude all documents containing the second term (ignore first term).
+    - unused: Ignore the condition.
+    """
+    term1_set = search_term(term1) if term1 else set()
+    term2_set = search_term(term2) if term2 else set()
 
-def process_queries():
-    res = open("doc_term_matrix.txt", "r")
+    if operator == "AND":
+        return term1_set & term2_set
+    elif operator == "OR":
+        return term1_set | term2_set
+    elif operator == "NOT":
+        return all_doc_ids - term2_set  # Exclude all documents with Term 2
+    elif operator == "unused":
+        return None  # Ignore unused condition
+    else:
+        return None
 
-    query1 = input("query 1: ")
-    if "AND" in query1:
-        query1 = query1.split(" AND ")
-        for i in query1:
-            search_str(i)
-        if 'False' not in q1_res:
-            print("Query 1 has a hit")
-process_queries()
-print(q1_res)
+@app.route("/", methods=["GET", "POST"])
+def index():
+    query_results = []  # To store individual results for each condition
+    combined_result = all_doc_ids  # Start with all documents for intersection
+
+    if request.method == "POST":
+        # Retrieve query conditions from the form
+        conditions = []
+        for i in range(1, 5):
+            term1 = request.form.get(f"term1_{i}", "").strip()
+            operator = request.form.get(f"operator_{i}", "unused")
+            term2 = request.form.get(f"term2_{i}", "").strip()
+            conditions.append((term1, operator, term2))
+
+        # Process each condition and store individual results
+        for idx, (term1, operator, term2) in enumerate(conditions):
+            result = process_query(term1, operator, term2)
+            if result is not None:  # Only store results for valid conditions
+                query_results.append((idx + 1, term1, operator, term2, sorted(result)))
+                combined_result &= result  # Intersect with the combined result
+
+    return render_template("index.html", query_results=query_results, combined_result=sorted(combined_result))
+
+if __name__ == "__main__":
+    build_document_term_matrix()
+    app.run(debug=True)
