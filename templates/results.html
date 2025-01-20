@@ -8,55 +8,46 @@
 <body>
     <h1>Search Results</h1>
 
-    <h2>Query</h2>
-    <ul>
-    {% for term1, operator, term2, _ in query_results %}
+<h2>Query</h2>
+<ul>
+    {% for term1, operator, term2 in conditions %}
         <li>{{ term1 }} {{ operator }} {{ term2 }}</li>
     {% endfor %}
-    </ul>
+</ul>
 
-    <h2>Match Summary</h2>
-    {% for count, docs in match_summary.items() %}
-        <p>{{ count }} Matching Conditions: {{ docs | length }} documents</p>
+<h2>Match Summary</h2>
+{% for count, docs in match_summary.items() %}
+    <p>{{ count }} Matching Conditions: {{ docs | length }} documents</p>
+{% endfor %}
+
+<h2>Ranked Results</h2>
+{% for doc_id, match_count in ranked_documents %}
+    <div>
+        <h3>Document {{ doc_id }} (Matches: {{ match_count }})</h3>
+        
+        {% if match_count > 0 %}
+            <p>{{ generate_snippet(doc_id, filtered_terms) | safe }}</p>
+        {% else %}
+            <p>No matches found.</p>
+        {% endif %}
+    </div>
+{% endfor %}
+
+<h2>Filtered Document-Term Matrix</h2>
+<table border="1">
+    <tr>
+        <th>Term</th>
+        <th>Documents</th>
+    </tr>
+    {% for term in filtered_terms %}
+    <tr>
+        <td>{{ term }}</td>
+        <td>{{ doc_term_matrix[term] | join(", ") }}</td>
+    </tr>
     {% endfor %}
+</table>
 
-    <h2>Ranked Results</h2>
-    {% for doc_id, match_count in ranked_documents %}
-        <div>
-            <h3>Document {{ doc_id }} (Matches: {{ match_count }})</h3>
-            
-            {% if match_count > 0 %}
-                <p>{{ generate_snippet(doc_id, filtered_terms) | safe }}</p>
-                
-                <h4>Conditions that match:</h4>
-                <ul>
-                    {% for condition in document_conditions_matched[doc_id] %}
-                        <li>{{ condition }}</li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>No matches found.</p>
-            {% endif %}
-        </div>
-    {% endfor %}
-    
-    
-    
+<a href="/">New Query</a>
 
-    <h2>Filtered Document-Term Matrix</h2>
-    <table border="1">
-        <tr>
-            <th>Term</th>
-            <th>Documents</th>
-        </tr>
-        {% for term in filtered_terms %}
-        <tr>
-            <td>{{ term }}</td>
-            <td>{{ doc_term_matrix[term] | join(", ") }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-
-    <a href="/">New Query</a>
 </body>
 </html>
