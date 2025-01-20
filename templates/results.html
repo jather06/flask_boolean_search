@@ -24,14 +24,23 @@
     {% for doc_id, match_count in ranked_documents %}
         <div>
             <h3>Document {{ doc_id }} (Matches: {{ match_count }})</h3>
-            {% set snippet = generate_snippet(doc_id, filtered_terms, document_match_count) %}
-            {% if snippet %}
-                <p>{{ snippet | safe }}</p>
+            
+            {% if match_count > 0 %}
+                <p>{{ generate_snippet(doc_id, filtered_terms) | safe }}</p>
+                
+                <h4>Conditions that match:</h4>
+                <ul>
+                    {% for condition in document_conditions_matched[doc_id] %}
+                        <li>{{ condition }}</li>
+                    {% endfor %}
+                </ul>
             {% else %}
                 <p>No matches found.</p>
             {% endif %}
         </div>
     {% endfor %}
+    
+    
     
 
     <h2>Filtered Document-Term Matrix</h2>

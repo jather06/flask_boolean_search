@@ -55,7 +55,7 @@ def search_term(term):
 
 def process_query(term1, operator, term2):
     """
-    Process a single query condition.
+    Process a single query condition and return matching documents along with the condition.
     - AND: Documents must contain both terms.
     - OR: Documents must contain either term.
     - NOT: Exclude all documents containing the second term (ignore first term).
@@ -64,54 +64,58 @@ def process_query(term1, operator, term2):
     term1_set = search_term(term1) if term1 else set()
     term2_set = search_term(term2) if term2 else set()
 
+    result = set()
+    condition_type = f"{term1} {operator} {term2}"
+
     if operator == "AND":
-        return term1_set & term2_set
+        result = term1_set & term2_set
     elif operator == "OR":
-        return term1_set | term2_set
+        result = term1_set | term2_set
     elif operator == "NOT":
-        return all_doc_ids - term2_set  # Exclude all documents with Term 2
+        result = all_doc_ids - term2_set  # Exclude all documents with Term 2
     elif operator == "unused":
-        return None  # Ignore unused condition
+        result = set()  # No results for unused conditions
+        condition_type = None
     else:
-        return None
+        result = set()
 
-def generate_snippet(doc_id, terms, document_match_count):
-    """Generate a document snippet with query terms highlighted, showing context before and after the term."""
-    # If no matches for the document, return an empty string
-    if document_match_count.get(doc_id, 0) == 0:
-        return ""
+    return result, condition_type
 
+def generate_snippet(doc_id, terms):
+    """Generate a document snippet with query terms highlighted and show surrounding words."""
     content = doc_contents.get(doc_id, "")  # Retrieve the document content
     if not content:
         return "Document not found."
 
     words = content.split()
-    highlighted_words = set(terms)  # Set of terms to highlight
     snippets = []
 
-    # Loop through words to find terms and generate snippets
-    for i, word in enumerate(words):
-        # If the word matches any of the terms, generate a snippet
-        if any(re.search(rf"\b{re.escape(term)}\b", word, re.IGNORECASE) for term in highlighted_words):
-            # Define the context around the found term (10 words before, 10 after)
-            start = max(i - 10, 0)
-            end = min(i + 11, len(words))
-
-            # Create a snippet with the surrounding words
-            snippet_context = words[start:end]
-            # Bold the found term in the snippet context
-            snippet_context = [
-                f"<b>{word}</b>" if any(re.search(rf"\b{re.escape(term)}\b", word, re.IGNORECASE) for term in highlighted_words) else word
-                for word in snippet_context
+    # Iterate through each term to highlight it and show the context
+    for term in terms:
+        term = term.lower()  # Ensure case-insensitive matching
+        term_positions = [i for i, word in enumerate(words) if word.lower() == term]
+        
+        for pos in term_positions:
+            start = max(0, pos - 10)  # Get 10 words before (if possible)
+            end = min(len(words), pos + 11)  # Get 10 words after (if possible)
+            
+            # Extract context around the term
+            context = words[start:end]
+            
+            # Highlight the term in the context
+            highlighted_context = [
+                f"<b>{word}</b>" if word.lower() == term else word
+                for word in context
             ]
-            snippets.append(" ".join(snippet_context))
+            
+            # Join the words and add the snippet
+            snippets.append(" ".join(highlighted_context))
 
-    # If no terms were found in the document, return empty
-    if not snippets:
-        return ""
-
-    # Return all snippets joined together
-    return " ... ".join(snippets)
+    # If snippets were generated, join them together
+    if snippets:
+        return " ... ".join(snippets) + " ..."
+    else:
+        return "No snippet available."
 
 
 
@@ -131,13 +135,16 @@ def index():
         query_results = []
         document_match_count = defaultdict(int)  # Count matches per document
         filtered_terms = set()
+        document_conditions_matched = defaultdict(list)  # Track conditions matched for each document
 
         for term1, operator, term2 in conditions:
-            result = process_query(term1, operator, term2)
-            if result is not None:  # Only store results for valid conditions
+            result, condition_type = process_query(term1, operator, term2)
+            if result:
                 query_results.append((term1, operator, term2, result))
                 for doc_id in result:
                     document_match_count[doc_id] += 1  # Increment match count per document
+                    if condition_type:
+                        document_conditions_matched[doc_id].append(condition_type)  # Store the condition
                 if term1:
                     filtered_terms.add(term1.lower())
                 if term2:
@@ -161,10 +168,12 @@ def index():
             filtered_terms=filtered_terms,
             generate_snippet=generate_snippet,
             document_match_count=document_match_count,
-            doc_term_matrix=doc_term_matrix  # Ensure doc_term_matrix is passed
+            doc_term_matrix=doc_term_matrix,
+            document_conditions_matched=document_conditions_matched  # Pass conditions matched
         )
 
     return render_template("index.html")
+
 
 
 
