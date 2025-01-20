@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results</title>
+</head>
+<body>
+    <h1>Search Results</h1>
+
+    <h2>Query</h2>
+    <ul>
+    {% for term1, operator, term2, _ in query_results %}
+        <li>{{ term1 }} {{ operator }} {{ term2 }}</li>
+    {% endfor %}
+    </ul>
+
+    <h2>Match Summary</h2>
+    {% for count, docs in match_summary.items() %}
+        <p>{{ count }} Matching Conditions: {{ docs | length }} documents</p>
+    {% endfor %}
+
+    <h2>Ranked Results</h2>
+    {% for doc_id, match_count in ranked_documents %}
+        <div>
+            <h3>Document {{ doc_id }} (Matches: {{ match_count }})</h3>
+            {% set snippet = generate_snippet(doc_id, filtered_terms, document_match_count) %}
+            {% if snippet %}
+                <p>{{ snippet | safe }}</p>
+            {% else %}
+                <p>No matches found.</p>
+            {% endif %}
+        </div>
+    {% endfor %}
+    
+
+    <h2>Filtered Document-Term Matrix</h2>
+    <table border="1">
+        <tr>
+            <th>Term</th>
+            <th>Documents</th>
+        </tr>
+        {% for term in filtered_terms %}
+        <tr>
+            <td>{{ term }}</td>
+            <td>{{ doc_term_matrix[term] | join(", ") }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <a href="/">New Query</a>
+</body>
+</html>
