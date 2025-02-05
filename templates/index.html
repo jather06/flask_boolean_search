@@ -15,6 +15,7 @@
                 <th>Operator</th>
                 <th>Term 2</th>
             </tr>
+            <!-- creates a table with the input boxes and a condition selector-->
             {% for i in range(1, 5) %}
             <tr>
                 <td>{{ i }}</td>
@@ -33,27 +34,5 @@
         </table>
         <button type="submit">Compute</button>
     </form>
-
-    <h2>Results for Individual Queries</h2>
-    {% if query_results %}
-        <ul>
-        {% for query in query_results %}
-            <li>
-                <strong>Condition {{ query[0] }}</strong>: 
-                <em>{{ query[1] }} {{ query[2] }} {{ query[3] }}</em> 
-                -> Matching Documents: {{ query[4] | join(", ") }}
-            </li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>No conditions were matched.</p>
-    {% endif %}
-
-    <h2>Documents Matching All Conditions</h2>
-    {% if combined_result %}
-        <p>Documents: {{ combined_result | join(", ") }}</p>
-    {% else %}
-        <p>No document satisfies all the conditions.</p>
-    {% endif %}
 </body>
 </html>

@@ -8,6 +8,7 @@
 <body>
     <h1>Search Results</h1>
 
+<!-- displays querie in a list-->
 <h2>Query</h2>
 <ul>
     {% for term1, operator, term2 in conditions %}
@@ -16,29 +17,32 @@
 </ul>
 
 <h2>Match Summary</h2>
-{% for count, docs in match_summary.items() %}
-    <p>{{ count }} Matching Conditions: {{ docs | length }} documents</p>
+{% for count, docs in match_summary.items() %} 
+    <p>{{ count }} Matching Conditions: {{docs | length }} documents</p>
 {% endfor %}
 
+<!-- Displays the results in the ranked order-->
 <h2>Ranked Results</h2>
 {% for doc_id, match_count in ranked_documents %}
     <div>
         <h3>Document {{ doc_id }} (Matches: {{ match_count }})</h3>
-        
+        <!-- if the doc has a match, generate a snippet-->
         {% if match_count > 0 %}
-            <p>{{ generate_snippet(doc_id, filtered_terms) | safe }}</p>
+            <p>{{ generate_snippet(doc_id, filtered_terms) | safe }}</p> 
         {% else %}
             <p>No matches found.</p>
         {% endif %}
     </div>
 {% endfor %}
 
+<!-- generate doctermmatrix -->
 <h2>Filtered Document-Term Matrix</h2>
 <table border="1">
     <tr>
         <th>Term</th>
         <th>Documents</th>
     </tr>
+    <!--display what documents have what terms by finding the term in the doctermmatrix -->
     {% for term in filtered_terms %}
     <tr>
         <td>{{ term }}</td>
@@ -47,6 +51,7 @@
     {% endfor %}
 </table>
 
+<!-- link to main page for a new query -->
 <a href="/">New Query</a>
 
 </body>
